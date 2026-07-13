@@ -26,7 +26,7 @@ def conversation_title(conv: dict) -> str:
 
 EXAMPLE_PROMPTS = [
     "Prep me for my renewal call with Tide Logistics AG",
-    "I've got a discovery call with Fjord Logistics AS, what do I need to know?",
+    "I've got a discovery call with Verdant Financial Services SAS, what do I need to know?",
     "What does the playbook say about handling a stalled renewal?",
     "Tell me about Brightline Retail GmbH",
 ]

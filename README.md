@@ -51,7 +51,7 @@ python drive_docs.py
 streamlit run app.py
 ```
 
-The sidebar has a few real example prompts against live accounts (Tide Logistics AG, Fjord Logistics AS, Brightline Retail GmbH) — a first-time user shouldn't have to guess what this can do, which matters given the interview research: skeptical AEs try once and don't come back if it doesn't earn its keep immediately.
+The sidebar has a few real example prompts against live accounts (Tide Logistics AG, Verdant Financial Services SAS, Brightline Retail GmbH — all genuinely mid-market, matching the persona) — a first-time user shouldn't have to guess what this can do, which matters given the interview research: skeptical AEs try once and don't come back if it doesn't earn its keep immediately.
 
 Or from the terminal, no Streamlit required:
 

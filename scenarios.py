@@ -13,6 +13,15 @@ which is exactly the kind of synthesis the interview research asked for).
 Each scenario picks a live account matching real signals (e.g. a customer
 with a renewal opportunity stalled in stage), not an already-churned account.
 
+Queries filter on SEGMENT = 'MM' - found via a spot-check that they didn't
+originally, and it wasn't theoretical: the account these queries had been
+picking for the "hot prospect" demo (Fjord Logistics AS) turned out to be
+SEGMENT='ENT', which undercuts the "scoped to mid-market only" story this
+whole build rests on if a demo account contradicts it. This dataset's AE
+books aren't segment-pure (even Sofia Alvarez, the closest real match to
+the case persona, owns a mix of SMB/MM/ENT accounts) - realistic, but not
+what you want showing up as your flagship demo example.
+
 Run:
     python scenarios.py
 """
@@ -38,7 +47,7 @@ AT_RISK_RENEWAL_QUERY = """
     SELECT a.COMPANY_NAME
     FROM CRM.ACCOUNTS a
     JOIN CRM.OPPORTUNITIES o ON o.ACCOUNT_ID = a.ACCOUNT_ID
-    WHERE a.STATUS = 'customer' AND o.TYPE = 'Renewal'
+    WHERE a.STATUS = 'customer' AND a.SEGMENT = 'MM' AND o.TYPE = 'Renewal'
       AND o.STAGE NOT IN ('Closed Won', 'Closed Lost')
     ORDER BY o.DAYS_IN_STAGE DESC
     LIMIT 1
@@ -48,7 +57,7 @@ HOT_PROSPECT_QUERY = """
     SELECT a.COMPANY_NAME
     FROM CRM.ACCOUNTS a
     JOIN CRM.OPPORTUNITIES o ON o.ACCOUNT_ID = a.ACCOUNT_ID
-    WHERE a.STATUS = 'prospect' AND o.STAGE IN ('Demo', 'Proposal')
+    WHERE a.STATUS = 'prospect' AND a.SEGMENT = 'MM' AND o.STAGE IN ('Demo', 'Proposal')
     ORDER BY o.DAYS_IN_STAGE ASC
     LIMIT 1
 """
