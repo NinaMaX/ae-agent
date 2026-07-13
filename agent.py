@@ -152,13 +152,27 @@ TOOLS = [
     },
     {
         "name": "get_recent_activities",
-        "description": "Recent logged activities (calls, emails, meetings) for the account, most recent first.",
-        "input_schema": {"type": "object", "properties": ACCOUNT_ID_PARAM, "required": ["account_id"]},
+        "description": "Recent logged activities (calls, emails, meetings) for the account, most recent first. Defaults to the last 15 - pass a higher limit if the AE asks for the fuller history you offered.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                **ACCOUNT_ID_PARAM,
+                "limit": {"type": "integer", "description": "How many activities to return. Omit for the default of 15."},
+            },
+            "required": ["account_id"],
+        },
     },
     {
         "name": "get_product_usage",
-        "description": "Monthly product usage: MAU, logins, payroll runs, and which modules (performance, recruiting) are active. Use to spot usage trends and adoption gaps.",
-        "input_schema": {"type": "object", "properties": ACCOUNT_ID_PARAM, "required": ["account_id"]},
+        "description": "Monthly product usage: MAU, logins, payroll runs, and which modules (performance, recruiting) are active. Use to spot usage trends and adoption gaps. Defaults to the last 6 months - pass a higher value for a longer trend.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                **ACCOUNT_ID_PARAM,
+                "months": {"type": "integer", "description": "How many months of usage history to return. Omit for the default of 6."},
+            },
+            "required": ["account_id"],
+        },
     },
     {
         "name": "get_support_tickets",
@@ -172,8 +186,8 @@ _SNOWFLAKE_TOOLS = {
     "get_account_summary": lambda i: snowflake_tools.get_account_summary(i["account_id"]),
     "get_contacts": lambda i: snowflake_tools.get_contacts(i["account_id"]),
     "get_opportunities": lambda i: snowflake_tools.get_opportunities(i["account_id"]),
-    "get_recent_activities": lambda i: snowflake_tools.get_recent_activities(i["account_id"]),
-    "get_product_usage": lambda i: snowflake_tools.get_product_usage(i["account_id"]),
+    "get_recent_activities": lambda i: snowflake_tools.get_recent_activities(**i),
+    "get_product_usage": lambda i: snowflake_tools.get_product_usage(**i),
     "get_support_tickets": lambda i: snowflake_tools.get_support_tickets(i["account_id"]),
 }
 
