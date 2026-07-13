@@ -10,29 +10,41 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
 _connection = None  # reused across calls - a call flow like "prep me for X"
-                     # fires 5-6 queries back to back, and re-authenticating
-                     # with Snowflake on every single one adds seconds of
-                     # avoidable latency for someone prepping under time pressure.
+                    # fires 5-6 queries back to back, and re-authenticating
+                    # with Snowflake on every single one adds seconds of
+                    # avoidable latency for someone prepping under time pressure.
 
 
 def _new_connection():
-    required = [
-        "SNOWFLAKE_ACCOUNT", "SNOWFLAKE_USER", "SNOWFLAKE_PASSWORD",
-        "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_DATABASE",
-    ]
+    required = ["SNOWFLAKE_ACCOUNT", "SNOWFLAKE_USER", "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_DATABASE"]
     missing = [k for k in required if not os.getenv(k)]
     if missing:
         raise RuntimeError(f"Missing env vars: {missing}")
 
-    return snowflake.connector.connect(
+    base_kwargs = dict(
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
         user=os.getenv("SNOWFLAKE_USER"),
-        password=os.getenv("SNOWFLAKE_PASSWORD"),
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
         database=os.getenv("SNOWFLAKE_DATABASE"),
         schema=os.getenv("SNOWFLAKE_SCHEMA"),
         role=os.getenv("SNOWFLAKE_ROLE"),
     )
+
+    # Prefer a Personal Access Token over a regular password - the sandbox
+    # account enforces MFA on password auth, which fails for programmatic
+    # access entirely. PATs are exempt by design.
+    pat = os.getenv("SNOWFLAKE_PAT")
+    if pat:
+        return snowflake.connector.connect(
+            password=pat,
+            authenticator="PROGRAMMATIC_ACCESS_TOKEN",
+            **base_kwargs,
+        )
+
+    password = os.getenv("SNOWFLAKE_PASSWORD")
+    if not password:
+        raise RuntimeError("Missing env vars: either SNOWFLAKE_PAT or SNOWFLAKE_PASSWORD is required")
+    return snowflake.connector.connect(password=password, **base_kwargs)
 
 
 def get_connection():
