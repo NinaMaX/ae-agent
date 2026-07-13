@@ -236,6 +236,34 @@ def latest_reply_text(messages: list[dict]) -> str:
     return "".join(b.text for b in last["content"] if getattr(b, "type", None) == "text")
 
 
+def log_feedback(question: str, reply: str, rating: str) -> None:
+    """Logs an AE's thumbs-up/down on a reply. The cheapest real signal for
+    "was this actually useful," and per Marcus Byrne's interview, the input
+    that should drive the next iteration - not assumptions about what AEs want."""
+    logger.info("feedback=%s question=%r reply_chars=%d", rating, question, len(reply))
+
+
+def group_into_turns(messages: list[dict]) -> list[dict]:
+    """Groups the raw message list into one entry per user turn, each with the
+    tool calls that backed it and the final reply text. Used by the UI to
+    show sources, and by eval scripts to assert on tool usage - e.g.
+    confirming a follow-up question doesn't re-fetch data already in context."""
+    turns = []
+    current = None
+    for msg in messages:
+        if msg["role"] == "user" and isinstance(msg["content"], str):
+            current = {"user": msg["content"], "tool_calls": [], "reply": ""}
+            turns.append(current)
+        elif msg["role"] == "assistant" and current is not None:
+            for block in msg["content"]:
+                block_type = getattr(block, "type", None)
+                if block_type == "tool_use":
+                    current["tool_calls"].append({"name": block.name, "input": block.input})
+                elif block_type == "text":
+                    current["reply"] += block.text
+    return turns
+
+
 if __name__ == "__main__":
     # Quick CLI smoke test, no Streamlit required.
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))

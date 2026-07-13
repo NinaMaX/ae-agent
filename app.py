@@ -14,29 +14,6 @@ def get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
-def group_into_turns(messages: list[dict]) -> list[dict]:
-    """Groups the raw Anthropic message list into one entry per AE question,
-    each carrying its final reply plus every tool call that backed it - so the
-    UI can show "what did this answer actually pull from" rather than asking
-    the AE to trust a black box. Sofia Alvarez's interview is explicit that a
-    single wrong fact costs months of trust; showing sources is the cheapest
-    way to make grounding checkable rather than just claimed in the prompt."""
-    turns = []
-    current = None
-    for msg in messages:
-        if msg["role"] == "user" and isinstance(msg["content"], str):
-            current = {"user": msg["content"], "tool_calls": [], "reply": ""}
-            turns.append(current)
-        elif msg["role"] == "assistant" and current is not None:
-            for block in msg["content"]:
-                block_type = getattr(block, "type", None)
-                if block_type == "tool_use":
-                    current["tool_calls"].append({"name": block.name, "input": block.input})
-                elif block_type == "text":
-                    current["reply"] += block.text
-    return turns
-
-
 EXAMPLE_PROMPTS = [
     "Prep me for my renewal call with Tide Logistics AG",
     "I've got a discovery call with Fjord Logistics AS, what do I need to know?",
@@ -61,7 +38,10 @@ st.caption("Internal AI Team · AE call-prep assistant")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-for turn in group_into_turns(st.session_state.messages):
+if "rated_turns" not in st.session_state:
+    st.session_state.rated_turns = set()
+
+for turn_index, turn in enumerate(agent.group_into_turns(st.session_state.messages)):
     with st.chat_message("user"):
         st.markdown(turn["user"])
     if turn["reply"] or turn["tool_calls"]:
@@ -73,6 +53,19 @@ for turn in group_into_turns(st.session_state.messages):
                 with st.expander(label):
                     for call in turn["tool_calls"]:
                         st.caption(f"`{call['name']}`  {call['input']}")
+            if turn["reply"]:
+                if turn_index in st.session_state.rated_turns:
+                    st.caption("Thanks for the feedback.")
+                else:
+                    up_col, down_col, _ = st.columns([1, 1, 10])
+                    if up_col.button("👍", key=f"up_{turn_index}"):
+                        agent.log_feedback(turn["user"], turn["reply"], "up")
+                        st.session_state.rated_turns.add(turn_index)
+                        st.rerun()
+                    if down_col.button("👎", key=f"down_{turn_index}"):
+                        agent.log_feedback(turn["user"], turn["reply"], "down")
+                        st.session_state.rated_turns.add(turn_index)
+                        st.rerun()
 
 if error_message := st.session_state.pop("error_message", None):
     st.error(error_message)

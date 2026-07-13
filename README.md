@@ -39,7 +39,7 @@ Populate `.env` (see `.env.example` for the full list and PAT setup notes):
 - `GOOGLE_DRIVE_API_KEY`: Google Cloud Console → enable the Drive API → Credentials → API key. Works without OAuth because the enablement folder is shared as "anyone with the link can view."
 - `GOOGLE_DRIVE_FOLDER_ID`: from the shared Drive folder's URL.
 
-Pull the enablement docs (required, not optional — `data/enablement/` isn't committed, since it's fetched content, not source; re-run if the Drive folder changes):
+`data/enablement/` is already committed with a live snapshot of the Drive folder, so the app runs out of the box without a Drive API key. Re-sync only if the Drive folder's content changes:
 
 ```bash
 python drive_docs.py
@@ -77,15 +77,16 @@ No agent framework — Claude's native tool use in a plain loop ([agent.py](agen
 python -m unittest tests.test_agent
 ```
 
-The tool-schema check needs nothing. The playbook-search checks need `data/enablement/` populated first (`python drive_docs.py`, requires `GOOGLE_DRIVE_API_KEY`) — not committed, since it's fetched content, not source (see *Setup*). A real CI pipeline would need that key as a secret, or a small committed fixture separate from the live cache; skipped that for a prototype this size.
+Runs without live credentials (playbook search against the committed docs + tool-schema checks) so it works in CI.
 
-End-to-end behavior with live data is verified via realistic multi-turn scenarios:
+Two levels of live-data verification, both needing Snowflake + Anthropic:
 
 ```bash
-python scenarios.py
+python scenarios.py    # realistic multi-turn transcripts, for manual read-through
+python eval_suite.py   # automated pass/fail: right tool called, follow-ups hold context, unknown accounts fail honestly
 ```
 
-This mirrors the persona's two calls (a renewal with an at-risk customer, a discovery call with a hot prospect) plus a drill-down/follow-up test and an unknown-account honesty test. Accounts are picked live from real data (e.g. a customer with a renewal opportunity stalled longest in stage) rather than hardcoded, since there's no explicit "at risk" flag in the schema — that's a judgment call the agent has to make from signals, which is exactly the synthesis the interview research asked for.
+`scenarios.py` mirrors the persona's two calls (a renewal with an at-risk customer, a discovery call with a hot prospect) plus a drill-down/follow-up test and an unknown-account honesty test — read the transcripts, judge the prose yourself. `eval_suite.py` is the regression-check version of the same idea: mechanically checkable assertions instead of eyeballing. Both pick accounts live from real data (e.g. a customer with a renewal opportunity stalled longest in stage) rather than hardcoding names, since there's no explicit "at risk" flag in the schema — that's a judgment call the agent has to make from signals, which is exactly the synthesis the interview research asked for.
 
 ## Scope
 

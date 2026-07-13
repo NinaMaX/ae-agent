@@ -1,9 +1,8 @@
 """
-Tests that need no Snowflake or Anthropic credentials. AgentToolSchemaTests
-is fully standalone; PlaybookSearchTests needs data/enablement/ populated
-first (`python drive_docs.py` - not committed, since it's fetched content,
-not source - see README's Setup/Testing sections). End-to-end agent behavior
-with live data is verified via scenarios.py, not here.
+Tests that need no Snowflake or Anthropic credentials - data/enablement/ is
+committed, so PlaybookSearchTests runs against it directly. End-to-end agent
+behavior with live data is verified via scenarios.py (manual transcripts)
+and eval_suite.py (automated pass/fail), not here.
 """
 
 import unittest
