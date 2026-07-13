@@ -44,6 +44,8 @@ python drive_docs.py
 streamlit run app.py
 ```
 
+The sidebar has a few real example prompts against live accounts (Tide Logistics AG, Fjord Logistics AS, Brightline Retail GmbH) — a first-time user shouldn't have to guess what this can do, which matters given the interview research: skeptical AEs try once and don't come back if it doesn't earn its keep immediately.
+
 Or from the terminal, no Streamlit required:
 
 ```bash
