@@ -24,7 +24,10 @@ import anthropic
 import agent  # loads .env as a side effect
 from scenarios import AT_RISK_RENEWAL_QUERY, HOT_PROSPECT_QUERY, _pick_account
 
-NOT_FOUND_PHRASES = ["couldn't find", "could not find", "don't have", "no account", "not in the system", "no matching"]
+NOT_FOUND_PHRASES = [
+    "couldn't find", "could not find", "can't find", "cannot find",
+    "don't have", "no account", "not in the system", "no matching",
+]
 
 
 def check_tool_called(turn: dict, expected_any_of: list[str]) -> tuple[bool, str]:

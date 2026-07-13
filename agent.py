@@ -54,24 +54,38 @@ battlecards, objection handling, pricing, case studies).
 How to prep for a call (when asked something like "prep me for X" or "tell \
 me about X"):
 1. Resolve the account, then pull account summary, recent activity, open \
-opportunities, product usage, and support tickets.
-2. Don't just list the fields back. Lead with what's notable: what changed \
+opportunities, product usage, and support tickets. Gather broadly - report \
+narrowly (see the length rule below). Casting a wide net here is how you \
+catch what she'd otherwise miss; the discipline is in what you say next, \
+not in what you look at.
+2. Don't list findings. Pick the ONE or at most TWO most important things - \
+not every notable signal you noticed - and lead with those: what changed \
 recently, what's easy to miss (a usage drop, an unresolved ticket the \
 activity log doesn't mention, an opportunity stalled in stage, a missing \
-stakeholder type in the contacts), and anything that contradicts the deal's \
+stakeholder type in the contacts), or anything that contradicts the deal's \
 apparent momentum. AEs already know the obvious stuff (stage, amount) - the \
-value is surfacing what they wouldn't have caught skimming Salesforce \
-themselves.
+value is surfacing the one thing they wouldn't have caught skimming \
+Salesforce themselves, not a comprehensive report of everything you checked.
 3. If a competitor is mentioned anywhere in activities, opportunity names, \
 or notes, or the deal shape matches a known battlecard, proactively surface \
 the relevant battlecard angle via search_playbook without waiting to be asked.
 4. If it's a renewal/expansion or the account looks like a good fit for a \
 customer story, proactively check search_playbook for a matching case study.
-5. Keep the first answer short - a few lines, not a report. Offer to go \
-deeper ("want me to pull the full activity history?") rather than dumping \
-everything.
+5. Keep every answer to 2-4 lines, no exceptions. This is not a soft \
+guideline - two AE interviews set the actual bar: Thomas Weber wants "two \
+lines: here's what's changed, here's what's worth bringing up on the call. \
+Anything longer I'm going to skim." Marcus Byrne wants literally "a one-line \
+answer" to what changed on an account. State the single most important \
+thing plainly, then stop - don't restate it three ways or list supporting \
+detail underneath it. Offer to go deeper ("want the full activity history?") \
+rather than including it up front. If your answer is running past 4 lines, \
+you're including too much - cut content, don't just tighten the wording.
 
 Other rules:
+- Don't re-call a data tool for an account you've already pulled data for \
+earlier in this same conversation - reason from what's already in context. \
+Only call it again if the AE asks about a different account, or explicitly \
+asks you to recheck or refresh something.
 - Ground every factual claim about an account or about Personio's \
 positioning in a tool call. Never invent account details, pricing, or \
 battlecard content. If a tool returns nothing relevant or an account can't \
@@ -244,7 +258,16 @@ def group_into_turns(messages: list[dict]) -> list[dict]:
     """Groups the raw message list into one entry per user turn, each with the
     tool calls that backed it and the final reply text. Used by the UI to
     show sources, and by eval scripts to assert on tool usage - e.g.
-    confirming a follow-up question doesn't re-fetch data already in context."""
+    confirming a follow-up question doesn't re-fetch data already in context.
+
+    Only the LAST assistant message's text counts as the reply - a turn can
+    include several assistant messages (one per tool-use round trip), and
+    Claude sometimes attaches explanatory text to an earlier, non-final one
+    alongside its tool_use block. That text is scaffolding for the tool call,
+    not a second answer - concatenating it with the real final answer (an
+    earlier version of this function did) reads as two competing, overlapping
+    replies glued together with no separator. Matches latest_reply_text(),
+    which already only looks at the final message."""
     turns = []
     current = None
     for msg in messages:
@@ -252,6 +275,7 @@ def group_into_turns(messages: list[dict]) -> list[dict]:
             current = {"user": msg["content"], "tool_calls": [], "reply": ""}
             turns.append(current)
         elif msg["role"] == "assistant" and current is not None:
+            current["reply"] = ""  # reset each assistant message - only the last one's text survives
             for block in msg["content"]:
                 block_type = getattr(block, "type", None)
                 if block_type == "tool_use":

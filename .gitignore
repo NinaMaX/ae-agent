@@ -5,4 +5,9 @@ __pycache__/
 .env
 .DS_Store
 
+# Symlinks Streamlit auto-creates into its own bundled agent-skill file
+# inside env/ - environment-local, would dangle for anyone else's venv.
+.agents/
+.claude/
+
 ONE_PAGER.md

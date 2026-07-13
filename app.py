@@ -21,6 +21,11 @@ EXAMPLE_PROMPTS = [
 st.set_page_config(page_title="Personio Call Prep Co-Pilot", page_icon="📞")
 
 with st.sidebar:
+    if st.button("＋ New chat", use_container_width=True):
+        st.session_state.messages = []
+        st.session_state.rated_turns = set()
+        st.rerun()
+    st.divider()
     st.subheader("Try asking")
     st.caption("A new AE won't know what this can do on day one - a few real starting points:")
     for prompt in EXAMPLE_PROMPTS:
