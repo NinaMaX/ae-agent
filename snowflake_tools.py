@@ -2,35 +2,43 @@
 Account-data tools backed by live Snowflake queries.
 
 Schema (confirmed via the Database Explorer screenshots — actual provisioned
-DB is PERSONIO, not the CASE_STUDY/GTM layout described in the case brief):
+DB is PERSONIO, not the CASE_STUDY/GTM layout described in the case brief).
+Full available columns per table (queries below don't always select all of
+them - see each function for what's actually used):
 
-  CRM.ACCOUNTS       (75 rows)  ACCOUNT_ID, ARR_EUR, COMPANY_NAME, CREATED_AT,
-                                 CUSTOMER_SINCE, EMPLOYEE_COUNT, INDUSTRY,
-                                 OWNER_AE, REGION, SEGMENT, STATUS
-  CRM.CONTACTS       (299 rows) ACCOUNT_ID, CONTACT_ID, CREATED_AT, EMAIL,
-                                 FULL_NAME, LAST_INTERACTION, PERSONA_TYPE,
-                                 ROLE_TITLE
-  CRM.OPPORTUNITIES  (85 rows)  ACCOUNT_ID, AMOUNT_EUR, CLOSE_DATE,
-                                 CREATED_AT, DAYS_IN_STAGE, NAME,
-                                 OPPORTUNITY_ID, OWNER_AE, STAGE, TYPE,
-                                 WON_LOST_REASON
-  CRM.ACTIVITIES     (747 rows) ACCOUNT_ID, ACTIVITY_DATE, ACTIVITY_ID,
-                                 ACTIVITY_TYPE, CONTACT_ID, OPPORTUNITY_ID,
-                                 OWNER_AE, SUBJECT, SUMMARY
-  PRODUCT.USAGE      (246 rows) ACCOUNT_ID, LOGINS, MONTH,
-                                 MONTHLY_ACTIVE_USERS, PAYROLL_RUNS,
-                                 PERFORMANCE_CYCLES_ACTIVE,
-                                 PERFORMANCE_MODULE_ACTIVE,
-                                 RECRUITING_MODULE_ACTIVE, USAGE_ID
-  SUPPORT.TICKETS    (47 rows)  ACCOUNT_ID, CREATED_DATE, PRIORITY,
-                                 RESOLVED_DATE, STATUS, SUBJECT, SUMMARY,
-                                 TICKET_ID
+  CRM.ACCOUNTS (75 rows)
+    ACCOUNT_ID, ARR_EUR, COMPANY_NAME, CREATED_AT, CUSTOMER_SINCE,
+    EMPLOYEE_COUNT, INDUSTRY, OWNER_AE, REGION, SEGMENT, STATUS
+  CRM.CONTACTS (299 rows)
+    ACCOUNT_ID, CONTACT_ID, CREATED_AT, EMAIL, FULL_NAME,
+    LAST_INTERACTION, PERSONA_TYPE, ROLE_TITLE
+  CRM.OPPORTUNITIES (85 rows)
+    ACCOUNT_ID, AMOUNT_EUR, CLOSE_DATE, CREATED_AT, DAYS_IN_STAGE, NAME,
+    OPPORTUNITY_ID, OWNER_AE, STAGE, TYPE, WON_LOST_REASON
+  CRM.ACTIVITIES (747 rows)
+    ACCOUNT_ID, ACTIVITY_DATE, ACTIVITY_ID, ACTIVITY_TYPE, CONTACT_ID,
+    OPPORTUNITY_ID, OWNER_AE, SUBJECT, SUMMARY
+  PRODUCT.USAGE (246 rows)
+    ACCOUNT_ID, LOGINS, MONTH, MONTHLY_ACTIVE_USERS, PAYROLL_RUNS,
+    PERFORMANCE_CYCLES_ACTIVE, PERFORMANCE_MODULE_ACTIVE,
+    RECRUITING_MODULE_ACTIVE, USAGE_ID
+  SUPPORT.TICKETS (47 rows)
+    ACCOUNT_ID, CREATED_DATE, PRIORITY, RESOLVED_DATE, STATUS, SUBJECT,
+    SUMMARY, TICKET_ID
 
-We don't know the exact enum values for STAGE / STATUS / PRIORITY yet (no
-sample rows pulled — MFA is still blocking a live connection as of writing).
-Tools deliberately return raw rows rather than filtering on guessed enum
-strings (e.g. STATUS = 'Open') so nothing silently drops data because of a
-wrong assumption. Revisit once discover_schema.py has run against live data.
+Confirmed enum values (via discover_schema.py + direct queries, not
+guessed): ACCOUNTS.STATUS is customer/prospect/churned - notably no "at
+risk" value, so that's a judgment call the agent makes from signals, not a
+flag it can filter on (see scenarios.py). OPPORTUNITIES.STAGE is Discovery/
+Qualification/Demo/Proposal/Negotiation/Closed Won/Closed Lost.
+TICKETS.PRIORITY is P1-P4, TICKETS.STATUS is In Progress/Resolved.
+ACTIVITIES.ACTIVITY_TYPE is Email/Meeting/Call/Note.
+
+Tools still return raw rows rather than filtering on these values (e.g. no
+STATUS = 'In Progress' clause) - not because the values are unknown anymore,
+but because filtering server-side would mean re-deploying every tool if a
+new enum value ever gets added, versus just letting the model reason over
+whatever comes back. Simpler and more robust than it looks.
 """
 
 from connection import run_query

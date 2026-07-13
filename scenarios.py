@@ -4,7 +4,7 @@ transcripts for manual quality review. Needs live Snowflake + Anthropic
 access, so it's a manual script, not part of the CI-safe test suite
 (tests/test_agent.py).
 
-Mirrors the case persona: a renewal/expansion call with a churn-risk
+Mirrors the case persona: a renewal/expansion call with an at-risk
 customer, back-to-back with a discovery call with a hot prospect. Account
 names aren't hardcoded - real STATUS/STAGE enum values were confirmed live
 (STATUS has no "at risk" value - it's customer/prospect/churned; "at risk" is
@@ -20,12 +20,9 @@ Run:
 import os
 
 import anthropic
-from dotenv import load_dotenv
 
 import agent
-from connection import run_query
-
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
+from connection import run_query  # loads .env as a side effect
 
 
 def _pick_account(query: str) -> str:

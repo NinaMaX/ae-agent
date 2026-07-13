@@ -20,12 +20,9 @@ import os
 import sys
 
 import anthropic
-from dotenv import load_dotenv
 
-import agent
+import agent  # loads .env as a side effect
 from scenarios import AT_RISK_RENEWAL_QUERY, HOT_PROSPECT_QUERY, _pick_account
-
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
 NOT_FOUND_PHRASES = ["couldn't find", "could not find", "don't have", "no account", "not in the system", "no matching"]
 

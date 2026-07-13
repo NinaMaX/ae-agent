@@ -12,11 +12,7 @@ this and update that docstring if the schema ever changes.
 
 import os
 
-from dotenv import load_dotenv
-
-from connection import run_query
-
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
+from connection import run_query  # loads .env as a side effect
 
 DATABASE = os.getenv("SNOWFLAKE_DATABASE", "PERSONIO")
 

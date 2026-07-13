@@ -18,12 +18,9 @@ import os
 import time
 
 import anthropic
-from dotenv import load_dotenv
 
 import playbook_search
-import snowflake_tools
-
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
+import snowflake_tools  # loads .env as a side effect (imports connection.py, which does)
 
 MODEL = "claude-sonnet-4-5"
 

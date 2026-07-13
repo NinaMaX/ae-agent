@@ -2,11 +2,8 @@ import os
 
 import anthropic
 import streamlit as st
-from dotenv import load_dotenv
 
-import agent
-
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
+import agent  # loads .env as a side effect (imports snowflake_tools -> connection.py, which does)
 
 
 @st.cache_resource
