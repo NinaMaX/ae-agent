@@ -6,9 +6,4 @@ __pycache__/
 .DS_Store
 .secrets/
 
-# Fetched from Google Drive at setup time (python drive_docs.py) - a build
-# artifact, not source. Keeping it out of git means the repo can't silently
-# drift from the actual Drive folder.
-data/enablement/*.md
-
 ONE_PAGER.md
