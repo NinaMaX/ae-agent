@@ -5,3 +5,12 @@ __pycache__/
 .env
 .DS_Store
 .secrets/
+
+# Fetched from Google Drive at setup time (python drive_docs.py) - a build
+# artifact, not source. Keeping it out of git means the repo can't silently
+# drift from the actual Drive folder.
+data/enablement/*.md
+
+# Superseded by a separate Google Slides submission - keeping both would risk
+# them drifting out of sync with no way to tell which is authoritative.
+ONE_PAGER.md

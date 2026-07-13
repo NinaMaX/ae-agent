@@ -39,7 +39,7 @@ Populate `.env` (see `.env.example` for the full list and PAT setup notes):
 - `GOOGLE_DRIVE_API_KEY`: Google Cloud Console → enable the Drive API → Credentials → API key. Works without OAuth because the enablement folder is shared as "anyone with the link can view."
 - `GOOGLE_DRIVE_FOLDER_ID`: from the shared Drive folder's URL.
 
-Pull the enablement docs (one-time, re-run if the Drive folder changes):
+Pull the enablement docs (required, not optional — `data/enablement/` isn't committed, since it's fetched content, not source; re-run if the Drive folder changes):
 
 ```bash
 python drive_docs.py
@@ -77,7 +77,7 @@ No agent framework — Claude's native tool use in a plain loop ([agent.py](agen
 python -m unittest tests.test_agent
 ```
 
-Runs without live credentials (playbook search + tool-schema checks) so it works in CI.
+The tool-schema check needs nothing. The playbook-search checks need `data/enablement/` populated first (`python drive_docs.py`, requires `GOOGLE_DRIVE_API_KEY`) — not committed, since it's fetched content, not source (see *Setup*). A real CI pipeline would need that key as a secret, or a small committed fixture separate from the live cache; skipped that for a prototype this size.
 
 End-to-end behavior with live data is verified via realistic multi-turn scenarios:
 
@@ -93,4 +93,4 @@ What's built: multi-turn chat, live enablement-doc search, live account-data too
 
 What's deliberately cut, given the ~3-5 hour box: no persistent memory across sessions, no write-back to Salesforce, no enterprise-AE flow (the interview notes are explicit that enterprise AEs want a different tool — see Ines Dubois's notes), no bespoke anomaly-detection model for "what changed" (the system prompt asks Claude to reason over the raw tool output instead, which is far cheaper to build and iterate on than a dedicated diffing/scoring pipeline, at the cost of being less deterministic).
 
-See the one-pager for the full scoping rationale, quality bar, and path to production.
+See the submitted one-pager (Google Slides, sent separately from this repo) for the full scoping rationale, quality bar, and path to production.

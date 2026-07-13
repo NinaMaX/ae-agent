@@ -1,7 +1,9 @@
 """
-Tests that run without live credentials (no Snowflake, no Anthropic key) so
-they work in CI. End-to-end agent behavior is verified manually via
-agent.py's CLI and the Streamlit app - see README.
+Tests that need no Snowflake or Anthropic credentials. AgentToolSchemaTests
+is fully standalone; PlaybookSearchTests needs data/enablement/ populated
+first (`python drive_docs.py` - not committed, since it's fetched content,
+not source - see README's Setup/Testing sections). End-to-end agent behavior
+with live data is verified via scenarios.py, not here.
 """
 
 import unittest

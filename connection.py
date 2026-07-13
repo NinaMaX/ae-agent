@@ -1,6 +1,13 @@
 """
 Snowflake connection helper.
-Loads credentials from .env — standard username/password auth.
+
+Prefers a Personal Access Token (SNOWFLAKE_PAT) over a plain password - this
+sandbox enforces MFA on password auth, which fails outright for programmatic
+access, and PATs are exempt. PATs bring their own wrinkle (they require a
+network policy on the account/user before Snowflake accepts them at all) -
+see the README's Status section for the full story, since it's genuinely
+useful context if this breaks again on a different Snowflake account.
+Password auth is kept as a fallback for any account without the MFA issue.
 """
 
 import os
@@ -9,13 +16,13 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
-_connection = None  # reused across calls - a call flow like "prep me for X"
-                    # fires 5-6 queries back to back, and re-authenticating
-                    # with Snowflake on every single one adds seconds of
-                    # avoidable latency for someone prepping under time pressure.
+_connection: snowflake.connector.SnowflakeConnection | None = None
+# Reused across calls - a flow like "prep me for X" fires 5-6 queries back to
+# back, and re-authenticating with Snowflake on every single one adds seconds
+# of avoidable latency for someone prepping under time pressure.
 
 
-def _new_connection():
+def _new_connection() -> snowflake.connector.SnowflakeConnection:
     required = ["SNOWFLAKE_ACCOUNT", "SNOWFLAKE_USER", "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_DATABASE"]
     missing = [k for k in required if not os.getenv(k)]
     if missing:
@@ -47,7 +54,7 @@ def _new_connection():
     return snowflake.connector.connect(password=password, **base_kwargs)
 
 
-def get_connection():
+def get_connection() -> snowflake.connector.SnowflakeConnection:
     global _connection
     if _connection is not None and not _connection.is_closed():
         return _connection
