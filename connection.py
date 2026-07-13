@@ -36,7 +36,7 @@ def _new_connection():
     pat = os.getenv("SNOWFLAKE_PAT")
     if pat:
         return snowflake.connector.connect(
-            password=pat,
+            token=pat,
             authenticator="PROGRAMMATIC_ACCESS_TOKEN",
             **base_kwargs,
         )
