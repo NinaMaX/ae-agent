@@ -1,13 +1,12 @@
 """
 Snowflake connection helper.
 
-Prefers a Personal Access Token (SNOWFLAKE_PAT) over a plain password - this
-sandbox enforces MFA on password auth, which fails outright for programmatic
-access, and PATs are exempt. PATs bring their own wrinkle (they require a
-network policy on the account/user before Snowflake accepts them at all) -
-see the README's Status section for the full story, since it's genuinely
-useful context if this breaks again on a different Snowflake account.
-Password auth is kept as a fallback for any account without the MFA issue.
+Authenticates with a Personal Access Token (SNOWFLAKE_PAT) - the method
+Personio's team advised for this environment, since plain password auth
+fails Snowflake's programmatic-MFA check here. Falls back to
+SNOWFLAKE_PASSWORD if no PAT is set, for portability to accounts without
+that restriction. See the README's Status section for the PAT network-policy
+requirement and how it was resolved.
 """
 
 import os
@@ -37,9 +36,6 @@ def _new_connection() -> snowflake.connector.SnowflakeConnection:
         role=os.getenv("SNOWFLAKE_ROLE"),
     )
 
-    # Prefer a Personal Access Token over a regular password - the sandbox
-    # account enforces MFA on password auth, which fails for programmatic
-    # access entirely. PATs are exempt by design.
     pat = os.getenv("SNOWFLAKE_PAT")
     if pat:
         return snowflake.connector.connect(

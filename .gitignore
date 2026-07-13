@@ -11,6 +11,4 @@ __pycache__/
 # drift from the actual Drive folder.
 data/enablement/*.md
 
-# Superseded by a separate Google Slides submission - keeping both would risk
-# them drifting out of sync with no way to tell which is authoritative.
 ONE_PAGER.md
