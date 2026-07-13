@@ -1,15 +1,13 @@
 """
-Run this before writing ANY query tools or trusting any schema
-description an AI tool generated for you.
+Verifies the real Snowflake schema rather than trusting a written
+description of it - the case brief described CASE_STUDY.GTM, the actual
+provisioned database is PERSONIO.CRM/PRODUCT/SUPPORT, and snowflake_tools.py
+was designed against the real thing, confirmed by running this live.
 
-It discovers what's REALLY in the PERSONIO database:
-- every schema (don't assume CRM/PRODUCT/SUPPORT exist - verify it)
-- every table in each schema
-- every column and its type
-- a few sample rows so you see real data shapes
-- row counts
-
-Save the full output - you'll need it to design your tool functions.
+Prints every schema, every table, every column and type, row counts, and a
+sample row per table. The current, permanent record of the schema lives in
+snowflake_tools.py's module docstring, not in this script's output - re-run
+this and update that docstring if the schema ever changes.
 """
 
 import os
