@@ -2,6 +2,8 @@
 
 ## Scope
 
+**The one-line pitch:** an assistant that helps AEs surface what they might miss before a call — not "a chatbot for sales," which is a weaker, harder-to-evaluate claim.
+
 **Built:** a conversational assistant an AE can chat with about any of their accounts — multi-turn, follow-ups keep context. It pulls live CRM/product/support data from Snowflake (7 tools: find account, account summary, contacts, opportunities, activities, product usage, support tickets) and cross-references 7 sales enablement docs from Drive (playbook, ICP, battlecards, objection handling, pricing, case studies) via keyword search. One system prompt, no bespoke ML.
 
 This is deliberately not "add a chatbot on top of Salesforce." Today, prep means four systems (Salesforce, Gong, Drive, Slack) and tribal memory, and the synthesis — what changed, what's easy to miss, which battlecard applies — happens in the AE's head, inconsistently, under time pressure. The redesign is putting that synthesis *in* the tool instead of leaving it as a skill some AEs have and others don't (Sofia: still learning the playbook at 18 months; Lena: 4 years in and still misses slow-motion renewal slips). That's the actual workflow change, not the chat UI.
@@ -17,10 +19,10 @@ This is deliberately not "add a chatbot on top of Salesforce." Today, prep means
 **No agent framework.** Claude's native tool-use API in a plain `while` loop (`agent.py`) is the entire agent runtime. At ~75 accounts and 7 documents, LangChain-style orchestration adds indirection without solving a real problem — and a loop anyone can read top to bottom is a better artifact for a technical deep-dive than a framework's abstractions.
 
 **Two tool families, kept separate on purpose:**
-- **Enablement search** (`playbook_search.py`) — the 7 docs are split into `##`-level sections (~800 lines of source total) and ranked by keyword overlap. No vector DB: at this corpus size, embeddings solve a problem I don't have. This is the first thing I'd swap for real retrieval if the doc set grew.
+- **Enablement search** (`playbook_search.py`) — the 7 docs are split into `##`-level sections (further split on `###` where a section packs several distinct items — found this the hard way: a query about matching HiBob's price initially lost to the HiBob battlecard, because all ten objections in `objection_handling.md` were one undifferentiated chunk) and ranked by keyword overlap. No vector DB: at this corpus size, embeddings solve a problem I don't have. This is the first thing I'd swap for real retrieval if the doc set grew.
 - **Account data** (`snowflake_tools.py`) — fixed queries, not a query-writing agent, for the reason above. Connections are reused across calls in a session rather than reconnected per query — a single "prep me for X" turn fires 5-6 queries, and re-authenticating on each one is real latency for someone prepping in a 10-minute gap between calls.
 
-**Grounding is a hard rule, not a suggestion.** The system prompt explicitly instructs the model to never state an ungrounded fact and to say "I don't have that" rather than guess — directly from Sofia Alvarez's interview: *"I'd rather it told me less and was right than told me more and was wrong sometimes."* This is enforced by prompt instruction today; see *Quality* for how I'd verify it's actually holding.
+**Grounding is a hard rule, not a suggestion.** The system prompt explicitly instructs the model to never state an ungrounded fact and to say "I don't have that" rather than guess — directly from Sofia Alvarez's interview: *"I'd rather it told me less and was right than told me more and was wrong sometimes."* This is enforced by prompt instruction today; see *Quality* for how I'd verify it's actually holding. It's also checkable, not just claimed: every answer in the UI has a "Sources" panel listing exactly which tool calls backed it (Streamlit already had this data in the tool-use message history — surfacing it was a UI change, not new infrastructure), and every tool call is logged with latency and outcome (`agent.py`), which is the minimum observability needed before handing this to someone other than me.
 
 ## Quality — what "good" means here and how I'd measure it
 

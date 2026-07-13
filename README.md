@@ -1,8 +1,15 @@
 # Personio Call-Prep Agent
 
-A conversational assistant for Account Executives prepping for account calls. Built for the Internal AI PM case study.
+An assistant that helps AEs surface what they might miss before a call — not a generic chatbot over Salesforce. Built for the Internal AI PM case study.
 
 Ask it about an account and it pulls live CRM/product/support data from Snowflake, cross-references Personio's sales enablement docs (playbook, ICP, battlecards, objection handling, pricing, case studies), and holds a real multi-turn conversation — follow-ups keep context, it doesn't just answer once and forget.
+
+## What this helps an AE do
+
+- **"Prep me for my renewal call with [account]"** — pulls account summary, recent activity, opportunities, usage trend, and support tickets, then leads with what's notable (a usage drop, a stalled opportunity, an unresolved ticket) rather than reading every field back.
+- **"What does the playbook say about handling a stalled renewal?"** — searches the actual enablement docs instead of you remembering which of ten battlecards has the answer.
+- **"Are they evaluating any competitors?"** — proactively surfaces the relevant battlecard the moment a competitor shows up in the account's activity, without you having to ask for it by name.
+- **"Prep me for my call with [account that doesn't exist]"** — says so plainly instead of inventing a plausible-sounding answer. This matters more than it sounds: one AE interview put it as *"if a tool tells me a wrong fact about a customer, I lose three months of trust in it."*
 
 ## Status
 

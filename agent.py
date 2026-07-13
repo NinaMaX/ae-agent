@@ -13,7 +13,9 @@ simplified role/text pairing) so tool_use / tool_result blocks survive across
 turns and the model keeps proper context on follow-up questions.
 """
 
+import logging
 import os
+import time
 
 import anthropic
 from dotenv import load_dotenv
@@ -24,6 +26,13 @@ import snowflake_tools
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
 MODEL = "claude-sonnet-4-5"
+
+# Lightweight observability foundation: every tool call, timed and logged.
+# Not a real logging pipeline - just enough that a failure or a slow tool
+# call is visible in the terminal/Streamlit logs rather than silently eaten,
+# which matters once this is more than a one-person demo.
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
+logger = logging.getLogger("ae_agent")
 
 # System prompt encodes findings from AE interviews (research/13_ae_interview_notes.md),
 # not just the case brief. The strongest unmet need across interviewees wasn't
@@ -158,7 +167,7 @@ _SNOWFLAKE_TOOLS = {
 }
 
 
-def _run_tool(name: str, tool_input: dict) -> str:
+def _dispatch_tool(name: str, tool_input: dict) -> str:
     if name == "search_playbook":
         results = playbook_search.search(tool_input["query"])
         if not results:
@@ -175,6 +184,18 @@ def _run_tool(name: str, tool_input: dict) -> str:
             return "No matching rows found."
         return str(rows)
     return f"Unknown tool: {name}"
+
+
+def _run_tool(name: str, tool_input: dict) -> str:
+    start = time.monotonic()
+    result = _dispatch_tool(name, tool_input)
+    elapsed_ms = (time.monotonic() - start) * 1000
+    failed = result.startswith("Query failed:") or result.startswith("Unknown tool:")
+    logger.info(
+        "tool=%s input=%s elapsed_ms=%.0f failed=%s result_chars=%d",
+        name, tool_input, elapsed_ms, failed, len(result),
+    )
+    return result
 
 
 def run_turn(client: anthropic.Anthropic, messages: list[dict]) -> list[dict]:
