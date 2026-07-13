@@ -250,8 +250,16 @@ def latest_reply_text(messages: list[dict]) -> str:
 def log_feedback(question: str, reply: str, rating: str) -> None:
     """Logs an AE's thumbs-up/down on a reply. The cheapest real signal for
     "was this actually useful," and per Marcus Byrne's interview, the input
-    that should drive the next iteration - not assumptions about what AEs want."""
-    logger.info("feedback=%s question=%r reply_chars=%d", rating, question, len(reply))
+    that should drive the next iteration - not assumptions about what AEs want.
+
+    This is a capture mechanism, not a closed loop: it writes to the log
+    (stdout today - a real deployment would want a durable sink, a file or a
+    table), and nothing currently reads it back to change agent behavior
+    automatically. Turning "AE hit thumbs-down on X" into a prompt or tool
+    change is still a human step. Logging the full reply, not just its
+    length, is what makes that human step possible at all - a rating with no
+    record of what was actually said isn't reviewable later."""
+    logger.info("feedback=%s question=%r reply=%r", rating, question, reply)
 
 
 def group_into_turns(messages: list[dict]) -> list[dict]:
