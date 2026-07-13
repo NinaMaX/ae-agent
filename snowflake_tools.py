@@ -46,16 +46,33 @@ from connection import run_query
 
 def find_account(name_query: str) -> list[dict]:
     """Fuzzy-matches a company name to account records. AEs will type
-    approximate names, so this is the entry point for every other tool."""
-    return run_query(
+    approximate names, so this is the entry point for every other tool.
+
+    Capped at 10 matches, but not silently - "Tide" alone matches exactly 5
+    accounts in this 75-account dataset (Tide Logistics, Tide Education,
+    Tide Solutions, Tide Professional, Tide Hospitality), which is close
+    enough to a hard cap of 5 that it was a real, live risk of a genuine
+    match vanishing with zero signal to the model. If the cap is actually
+    hit, appends a note with the true count so the agent can tell the AE to
+    narrow the search instead of confidently presenting a partial list as
+    if it were complete."""
+    matches = run_query(
         """
         SELECT ACCOUNT_ID, COMPANY_NAME, INDUSTRY, REGION, SEGMENT, STATUS, OWNER_AE
         FROM CRM.ACCOUNTS
         WHERE COMPANY_NAME ILIKE %s
-        LIMIT 5
+        LIMIT 10
         """,
         (f"%{name_query}%",),
     )
+    if len(matches) == 10:
+        total = run_query(
+            "SELECT COUNT(*) AS n FROM CRM.ACCOUNTS WHERE COMPANY_NAME ILIKE %s",
+            (f"%{name_query}%",),
+        )[0]["N"]
+        if total > 10:
+            matches.append({"NOTE": f"Only showing 10 of {total} matches - ask the AE to narrow the search."})
+    return matches
 
 
 def get_account_summary(account_id: str) -> list[dict]:
