@@ -40,4 +40,4 @@ Given the interview research, "good" is not primarily "the LLM writes fluently."
 
 ## Note on this submission's status
 
-Snowflake access is MFA-blocked as of writing (flagged to Eva Wong, no response yet) — the account-data tools are written and unit-tested but not yet verified against live rows. Google Drive and the agent's LLM calls are live and demoed end-to-end in `scenarios.py`. See `README.md` for full status and how to re-run once access is restored.
+All three integrations (Snowflake, Google Drive, Anthropic) are live and verified end-to-end — see `scenarios.py` for full transcripts against real accounts. Getting Snowflake working surfaced two real access-control issues in the sandbox (MFA blocking programmatic password auth; Personal Access Tokens separately requiring a network policy) — both diagnosed and resolved without needing elevated privileges. See `README.md` for the specifics, since they'd likely trip up anyone else using this sandbox.

@@ -6,11 +6,16 @@ Ask it about an account and it pulls live CRM/product/support data from Snowflak
 
 ## Status
 
-- **Google Drive (unstructured data):** live and working.
-- **Anthropic (the agent itself):** live and working.
-- **Snowflake (structured CRM/product/support data):** blocked. The provisioned `CASE_STUDY_RO`-equivalent account enforces MFA on password auth, which fails for programmatic/API access (`snowflake.connector.errors.DatabaseError: ... MFA authentication is required, but none of your current MFA methods are supported for programmatic authentication`). Flagged to Eva Wong; no response yet as of this submission. Every account-data code path is written and tool-tested with mocked failures, but not yet verified against live rows — see [snowflake_tools.py](snowflake_tools.py) and the note in that file.
+Everything is live: Google Drive, Anthropic, and Snowflake, all verified end-to-end against real data — see `scenarios.py` for full transcripts.
 
-When Snowflake access is restored: run `python discover_schema.py` to confirm the schema hasn't drifted from what's documented below, then run the agent — no code changes should be needed.
+Getting Snowflake working took two fixes worth noting, since they'll matter for anyone else hitting this sandbox:
+1. **MFA blocks plain password auth entirely** for programmatic access (`MFA authentication is required, but none of your current MFA methods are supported for programmatic authentication`). Fix: use a Snowflake Personal Access Token instead (`SNOWFLAKE_PAT` in `.env`) — PATs are exempt from the interactive MFA requirement. `connection.py` tries PAT auth first and falls back to password.
+2. **PATs themselves require a network policy** to be attached to the account or user before Snowflake will accept them at all (`Fail : Network policy is required`). The provisioned role (`APPLICANT_FR`) doesn't have `CREATE NETWORK POLICY`, confirmed by testing directly rather than guessing. The actual fix needed no admin: self-issuing a *new* PAT with a temporary bypass works with a normal user's own privileges —
+   ```sql
+   ALTER USER "<your_username>" ADD PROGRAMMATIC ACCESS TOKEN <name>
+     DAYS_TO_EXPIRY = 7
+     MINS_TO_BYPASS_NETWORK_POLICY_REQUIREMENT = 10080;
+   ```
 
 ## Setup
 
@@ -21,8 +26,8 @@ pip install -r requirements.txt
 cp .env.example .env   # fill in real values
 ```
 
-Populate `.env`:
-- Snowflake credentials from the case study's shared 1Password link.
+Populate `.env` (see `.env.example` for the full list and PAT setup notes):
+- Snowflake credentials from the case study's shared 1Password link, plus a `SNOWFLAKE_PAT` (see *Status* above for why).
 - `ANTHROPIC_API_KEY` from console.anthropic.com.
 - `GOOGLE_DRIVE_API_KEY`: Google Cloud Console → enable the Drive API → Credentials → API key. Works without OAuth because the enablement folder is shared as "anyone with the link can view."
 - `GOOGLE_DRIVE_FOLDER_ID`: from the shared Drive folder's URL.
@@ -63,11 +68,19 @@ No agent framework — Claude's native tool use in a plain loop ([agent.py](agen
 python -m unittest tests.test_agent
 ```
 
-Runs without live credentials (playbook search + tool-schema checks) so it works in CI. End-to-end behavior with live data is verified manually — see the demo in the live session.
+Runs without live credentials (playbook search + tool-schema checks) so it works in CI.
+
+End-to-end behavior with live data is verified via realistic multi-turn scenarios:
+
+```bash
+python scenarios.py
+```
+
+This mirrors the persona's two calls (a renewal with an at-risk customer, a discovery call with a hot prospect) plus a drill-down/follow-up test and an unknown-account honesty test. Accounts are picked live from real data (e.g. a customer with a renewal opportunity stalled longest in stage) rather than hardcoded, since there's no explicit "at risk" flag in the schema — that's a judgment call the agent has to make from signals, which is exactly the synthesis the interview research asked for.
 
 ## Scope
 
-What's built: multi-turn chat, live enablement-doc search, live account-data tools (pending Snowflake access), a system prompt grounded in real AE research.
+What's built: multi-turn chat, live enablement-doc search, live account-data tools, a system prompt grounded in real AE research.
 
 What's deliberately cut, given the ~3-5 hour box: no persistent memory across sessions, no write-back to Salesforce, no enterprise-AE flow (the interview notes are explicit that enterprise AEs want a different tool — see Ines Dubois's notes), no bespoke anomaly-detection model for "what changed" (the system prompt asks Claude to reason over the raw tool output instead, which is far cheaper to build and iterate on than a dedicated diffing/scoring pipeline, at the cost of being less deterministic).
 

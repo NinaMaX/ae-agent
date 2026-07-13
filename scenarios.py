@@ -6,12 +6,14 @@ access, so it's a manual script, not part of the CI-safe test suite
 
 Mirrors the case persona: a renewal/expansion call with a churn-risk
 customer, back-to-back with a discovery call with a hot prospect. Account
-names aren't hardcoded (we don't know the real 75 accounts yet - Snowflake
-access is still MFA-blocked as of writing) - this script discovers a
-plausible account for each scenario live, falling back to "any account" if
-the targeted filter comes back empty rather than failing outright.
+names aren't hardcoded - real STATUS/STAGE enum values were confirmed live
+(STATUS has no "at risk" value - it's customer/prospect/churned; "at risk" is
+a judgment call the agent has to make from signals, not a flag to filter on,
+which is exactly the kind of synthesis the interview research asked for).
+Each scenario picks a live account matching real signals (e.g. a customer
+with a renewal opportunity stalled in stage), not an already-churned account.
 
-Run once Snowflake access is restored:
+Run:
     python scenarios.py
 """
 
@@ -26,21 +28,38 @@ from connection import run_query
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
 
-def _pick_account(where_ilike: str) -> str:
-    """Finds a company name matching a loose filter; falls back to any
-    account if the filter matches nothing (enum values are unconfirmed)."""
-    rows = run_query(
-        f"SELECT COMPANY_NAME FROM CRM.ACCOUNTS WHERE {where_ilike} LIMIT 1"
-    )
+def _pick_account(query: str) -> str:
+    """Runs a query returning a COMPANY_NAME column; falls back to any
+    account if it comes back empty."""
+    rows = run_query(query)
     if not rows:
         rows = run_query("SELECT COMPANY_NAME FROM CRM.ACCOUNTS LIMIT 1")
     return rows[0]["COMPANY_NAME"]
 
 
+AT_RISK_RENEWAL_QUERY = """
+    SELECT a.COMPANY_NAME
+    FROM CRM.ACCOUNTS a
+    JOIN CRM.OPPORTUNITIES o ON o.ACCOUNT_ID = a.ACCOUNT_ID
+    WHERE a.STATUS = 'customer' AND o.TYPE = 'Renewal'
+      AND o.STAGE NOT IN ('Closed Won', 'Closed Lost')
+    ORDER BY o.DAYS_IN_STAGE DESC
+    LIMIT 1
+"""
+
+HOT_PROSPECT_QUERY = """
+    SELECT a.COMPANY_NAME
+    FROM CRM.ACCOUNTS a
+    JOIN CRM.OPPORTUNITIES o ON o.ACCOUNT_ID = a.ACCOUNT_ID
+    WHERE a.STATUS = 'prospect' AND o.STAGE IN ('Demo', 'Proposal')
+    ORDER BY o.DAYS_IN_STAGE ASC
+    LIMIT 1
+"""
+
 SCENARIOS = [
     {
-        "label": "Renewal / expansion call with a churn-risk customer",
-        "account_filter": "STATUS ILIKE '%risk%' OR STATUS ILIKE '%churn%'",
+        "label": "Renewal / expansion call with an at-risk customer",
+        "account_query": AT_RISK_RENEWAL_QUERY,
         "turns": [
             "Prep me for my renewal call with {account}",
             "What's our usage trend looking like there?",
@@ -50,7 +69,7 @@ SCENARIOS = [
     },
     {
         "label": "Discovery call with a hot prospect",
-        "account_filter": "STATUS ILIKE '%prospect%' OR STATUS ILIKE '%active%'",
+        "account_query": HOT_PROSPECT_QUERY,
         "turns": [
             "I've got a discovery call with {account} coming up, what do I need to know?",
             "Who are the stakeholders we've engaged so far?",
@@ -59,7 +78,7 @@ SCENARIOS = [
     },
     {
         "label": "Drill-down / follow-up behavior (single account, multiple angles)",
-        "account_filter": "1=1",  # any account
+        "account_query": "SELECT COMPANY_NAME FROM CRM.ACCOUNTS LIMIT 1",
         "turns": [
             "Tell me about {account}",
             "What's their ARR and how long have they been a customer?",
@@ -68,7 +87,7 @@ SCENARIOS = [
     },
     {
         "label": "Unknown account (tests honest failure, not hallucination)",
-        "account_filter": None,
+        "account_query": None,
         "turns": [
             "Prep me for my call with Definitely Not A Real Company Inc",
         ],
@@ -79,8 +98,8 @@ SCENARIOS = [
 def run_scenario(client, scenario):
     print(f"\n{'=' * 70}\n{scenario['label']}\n{'=' * 70}")
     account = None
-    if scenario["account_filter"]:
-        account = _pick_account(scenario["account_filter"])
+    if scenario["account_query"]:
+        account = _pick_account(scenario["account_query"])
         print(f"(using account: {account})\n")
 
     convo = []
