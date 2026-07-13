@@ -14,7 +14,9 @@ section-sized chunks is simple, fast, and easy to reason about. Would move to
 embeddings if the corpus grew materially.
 """
 
+import math
 import re
+from collections import Counter
 from pathlib import Path
 
 ENABLEMENT_DIR = Path(__file__).resolve().parent / "data" / "enablement"
@@ -81,6 +83,27 @@ def _load_chunks() -> list[dict]:
 _CHUNKS = _load_chunks()
 
 
+def _compute_idf(chunks: list[dict]) -> dict[str, float]:
+    """Down-weights terms that show up in many chunks, up-weights rare ones.
+    Found via testing that this matters, not just in theory: a query like
+    "deal stuck in qualification" was losing the playbook's own Qualification
+    section to its Discovery section, because "discovery" appears constantly
+    across the doc (diluting how specific a signal it actually is) while
+    "qualification" is rare but landed in a section too short to rack up raw
+    term-frequency hits. Still plain keyword retrieval, not embeddings - this
+    is the natural next step from counting term frequency, appropriate
+    regardless of corpus size, not a step toward a vector store."""
+    doc_freq = Counter()
+    for chunk in chunks:
+        terms = set(_tokenize(chunk["text"])) | set(_tokenize(chunk["section"]))
+        doc_freq.update(terms)
+    n = len(chunks)
+    return {term: math.log(n / (1 + df)) + 1 for term, df in doc_freq.items()}
+
+
+_IDF = _compute_idf(_CHUNKS)
+
+
 def search(query: str, top_k: int = 5) -> list[dict]:
     """Returns the top_k enablement doc sections most relevant to the query."""
     query_terms = _tokenize(query)
@@ -91,11 +114,13 @@ def search(query: str, top_k: int = 5) -> list[dict]:
     for chunk in _CHUNKS:
         body_terms = _tokenize(chunk["text"])
         heading_terms = _tokenize(chunk["section"])
-        body_hits = sum(body_terms.count(t) for t in query_terms)
-        heading_hits = sum(heading_terms.count(t) for t in query_terms) * 3  # headings weigh more
-        score = body_hits + heading_hits
+        score = 0.0
+        for t in query_terms:
+            weight = _IDF.get(t, 1.0)
+            score += body_terms.count(t) * weight
+            score += heading_terms.count(t) * weight * 3  # headings weigh more
         if score > 0:
-            scored.append({**chunk, "score": score})
+            scored.append({**chunk, "score": round(score, 2)})
 
     scored.sort(key=lambda c: c["score"], reverse=True)
     return scored[:top_k]
