@@ -16,7 +16,7 @@ Ask it about an account and it pulls live CRM/product/support data from Snowflak
 Everything is live: Google Drive, Anthropic, and Snowflake, all verified end-to-end against real data — see `scenarios.py` for full transcripts.
 
 Getting Snowflake working took two fixes worth noting, since they'll matter for anyone else hitting this sandbox:
-1. **MFA blocks plain password auth entirely** for programmatic access (`MFA authentication is required, but none of your current MFA methods are supported for programmatic authentication`). Fix: use a Snowflake Personal Access Token instead (`SNOWFLAKE_PAT` in `.env`) — PATs are exempt from the interactive MFA requirement. `connection.py` tries PAT auth first and falls back to password.
+1. **MFA blocks plain password auth entirely** for programmatic access (`MFA authentication is required, but none of your current MFA methods are supported for programmatic authentication`). Fix, and the reason `connection.py` only supports Programmatic Access Tokens: PATs are exempt from the interactive MFA requirement, and it's also what Personio's team advised using from the start (`SNOWFLAKE_PAT` in `.env`).
 2. **PATs themselves require a network policy** to be attached to the account or user before Snowflake will accept them at all (`Fail : Network policy is required`). The provisioned role (`APPLICANT_FR`) doesn't have `CREATE NETWORK POLICY`, confirmed by testing directly rather than guessing. The actual fix needed no admin: self-issuing a *new* PAT with a temporary bypass works with a normal user's own privileges —
    ```sql
    ALTER USER "<your_username>" ADD PROGRAMMATIC ACCESS TOKEN <name>
