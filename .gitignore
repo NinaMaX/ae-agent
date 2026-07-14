@@ -9,5 +9,3 @@ __pycache__/
 # inside env/ - environment-local, would dangle for anyone else's venv.
 .agents/
 .claude/
-
-ONE_PAGER.md

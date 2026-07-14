@@ -94,4 +94,4 @@ What's built: multi-turn chat, live enablement-doc search, live account-data too
 
 What's deliberately cut, given the ~3-5 hour box: no persistent memory across sessions, no write-back to Salesforce, no enterprise-AE flow (the interview notes are explicit that enterprise AEs want a different tool — see Ines Dubois's notes), no bespoke anomaly-detection model for "what changed" (the system prompt asks Claude to reason over the raw tool output instead, which is far cheaper to build and iterate on than a dedicated diffing/scoring pipeline, at the cost of being less deterministic).
 
-See the submitted one-pager (Google Slides, sent separately from this repo) for the full scoping rationale, quality bar, and path to production.
+See [ONE_PAGER.md](ONE_PAGER.md) for the full scoping rationale, quality bar, and path to production.
