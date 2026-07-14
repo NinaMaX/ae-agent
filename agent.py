@@ -31,7 +31,7 @@ MODEL = "claude-sonnet-4-5"
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("ae_agent")
 
-# System prompt encodes findings from AE interviews (research/13_ae_interview_notes.md),
+# System prompt encodes findings from AE interviews (documents/13_ae_interview_notes.md),
 # not just the case brief. The strongest unmet need across interviewees wasn't
 # "restate account facts" - it was "tell me what changed" / "tell me what I'd
 # miss" (Lena, Marcus, Thomas), with trust hinging on never stating an
