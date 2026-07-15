@@ -1,4 +1,4 @@
-# Personio Call-Prep Agent
+# Personio AE Call-Prep Agent
 
 An assistant that helps AEs surface what they might miss before a call — not a generic chatbot over Salesforce. Built for the Internal AI PM case study.
 

@@ -1,4 +1,4 @@
-# Personio Call-Prep Agent — Approach
+# Personio AE Call-Prep Agent — Approach
 
 ## Scope
 
