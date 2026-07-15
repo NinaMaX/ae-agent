@@ -61,18 +61,25 @@ with st.sidebar:
                 st.rerun()
 
     st.divider()
-    st.subheader("Try asking")
-    st.caption("First time here? Start with one of these:")
-    for prompt in EXAMPLE_PROMPTS:
-        if st.button(prompt, use_container_width=True):
-            st.session_state.pending_prompt = prompt
-    st.divider()
     st.caption("Uses live account data plus Personio's playbook, battlecards, and pricing guide. Ask follow-ups any time.")
 
 st.title("📞 Personio Call Prep Co-Pilot")
 st.caption("Internal AI Team · AE call-prep assistant")
 
 active = st.session_state.conversations[st.session_state.active_index]
+
+if not active["messages"]:
+    # Empty-state examples live here, not the sidebar, and only while this
+    # chat has nothing in it yet - two problems solved at once: they can't
+    # pile up and push the sidebar's history list off-screen as you use the
+    # app, and clicking one can never inject into an already-running
+    # conversation, since they're only ever visible before one exists.
+    st.subheader("Try asking")
+    st.caption("First time here? Start with one of these:")
+    cols = st.columns(2)
+    for i, prompt in enumerate(EXAMPLE_PROMPTS):
+        if cols[i % 2].button(prompt, use_container_width=True, key=f"example_{i}"):
+            st.session_state.pending_prompt = prompt
 
 for turn_index, turn in enumerate(agent.group_into_turns(active["messages"])):
     with st.chat_message("user"):
