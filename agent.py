@@ -13,9 +13,11 @@ simplified role/text pairing) so tool_use / tool_result blocks survive across
 turns and the model keeps proper context on follow-up questions.
 """
 
+import json
 import logging
 import os
 import time
+from datetime import datetime, timezone
 
 import anthropic
 
@@ -30,6 +32,13 @@ MODEL = "claude-sonnet-4-5"
 # which matters once this is more than a one-person demo.
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("ae_agent")
+
+# Feedback needs to survive past the terminal's scrollback, not just print to
+# it - a rating with no durable record isn't reviewable after the session
+# ends. A flat JSONL file is the minimum viable durable sink for a same-day
+# prototype; a real deployment would swap this for a table, not the shape
+# of the log entry itself.
+FEEDBACK_LOG_PATH = os.path.join(os.path.dirname(__file__), "feedback_log.jsonl")
 
 # System prompt encodes findings from AE interviews (documents/13_ae_interview_notes.md),
 # not just the case brief. The strongest unmet need across interviewees wasn't
@@ -266,14 +275,25 @@ def log_feedback(question: str, reply: str, rating: str) -> None:
     "was this actually useful," and per Marcus Byrne's interview, the input
     that should drive the next iteration - not assumptions about what AEs want.
 
-    This is a capture mechanism, not a closed loop: it writes to the log
-    (stdout today - a real deployment would want a durable sink, a file or a
-    table), and nothing currently reads it back to change agent behavior
-    automatically. Turning "AE hit thumbs-down on X" into a prompt or tool
-    change is still a human step. Logging the full reply, not just its
-    length, is what makes that human step possible at all - a rating with no
-    record of what was actually said isn't reviewable later."""
+    Writes twice: once to the terminal log (for watching it happen live
+    during a demo) and once appended to FEEDBACK_LOG_PATH as a JSON line
+    (so it survives past that terminal's scrollback - a rating with no
+    durable record isn't reviewable after the session ends).
+
+    Still a capture mechanism, not a closed loop: nothing reads this file
+    back to change agent behavior automatically. Turning "AE hit
+    thumbs-down on X" into a prompt or tool change is still a human step -
+    logging the full reply, not just a length, is what makes that human
+    step possible at all."""
     logger.info("feedback=%s question=%r reply=%r", rating, question, reply)
+    record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "rating": rating,
+        "question": question,
+        "reply": reply,
+    }
+    with open(FEEDBACK_LOG_PATH, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record) + "\n")
 
 
 def group_into_turns(messages: list[dict]) -> list[dict]:

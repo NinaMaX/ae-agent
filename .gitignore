@@ -9,3 +9,7 @@ __pycache__/
 # inside env/ - environment-local, would dangle for anyone else's venv.
 .agents/
 .claude/
+
+# Runtime output from using the app, not source - would just accumulate
+# noise in git history.
+feedback_log.jsonl
