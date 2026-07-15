@@ -12,6 +12,9 @@ def get_client() -> anthropic.Anthropic:
 
 
 def new_conversation() -> None:
+    active = st.session_state.conversations[st.session_state.active_index]
+    if not active["messages"]:
+        return  # already sitting on an empty chat - nothing to save, nothing to do
     st.session_state.conversations.append({"messages": [], "rated_turns": set()})
     st.session_state.active_index = len(st.session_state.conversations) - 1
 
