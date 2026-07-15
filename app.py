@@ -59,12 +59,12 @@ with st.sidebar:
 
     st.divider()
     st.subheader("Try asking")
-    st.caption("A new AE won't know what this can do on day one - a few real starting points:")
+    st.caption("First time here? Start with one of these:")
     for prompt in EXAMPLE_PROMPTS:
         if st.button(prompt, use_container_width=True):
             st.session_state.pending_prompt = prompt
     st.divider()
-    st.caption("Pulls live from Snowflake (CRM/product/support) and Personio's sales enablement docs. Multi-turn - ask a follow-up.")
+    st.caption("Uses live account data plus Personio's playbook, battlecards, and pricing guide. Ask follow-ups any time.")
 
 st.title("📞 Personio Call Prep Co-Pilot")
 st.caption("Internal AI Team · AE call-prep assistant")
